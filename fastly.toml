@@ -1,5 +1,11 @@
 manifest_version = 2
-name = "Empty starter for Rust"
-description = "An empty starter kit project template."
+name = "Connect to Google Bigquery for Rust"
+description = "Starter kit for Google Bigquery Connector."
 authors = ["<oss@fastly.com>"]
 language = "rust"
+[local_server]
+  [local_server.backends]
+    [local_server.backends.bigquery]
+      url = "https://bigquery.googleapis.com/"
+    [local_server.backends.idp]
+      url = "https://oauth2.googleapis.com/"
