@@ -127,9 +127,7 @@ dependencies = [
  "base64",
  "chrono",
  "fastly",
- "fastly-kv-preview",
  "hex",
- "hmac-sha256",
  "jwt-simple",
  "log",
  "log-fastly",
@@ -250,18 +248,6 @@ dependencies = [
  "thiserror",
  "time 0.3.2",
  "url",
-]
-
-[[package]]
-name = "fastly-kv-preview"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f86ee349287c6fd117d1b09b5f052e2630e11e01d3ca1dc03830f58020814ba6"
-dependencies = [
- "fastly",
- "fastly-shared",
- "lazy_static",
- "thiserror",
 ]
 
 [[package]]

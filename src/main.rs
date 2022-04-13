@@ -1,8 +1,8 @@
-mod gcp;
 mod config;
+mod gcp;
 
 use fastly::http::{Method, StatusCode};
-use fastly::{Request, Response, Error};
+use fastly::{Error, Request, Response};
 
 const LOGENDPOINT: &str = "papertrail";
 
@@ -25,5 +25,4 @@ fn main(mut req: Request) -> Result<Response, Error> {
         // Catch all other requests and return a 404.
         _ => return Ok(Response::from_status(StatusCode::NOT_FOUND)),
     };
-
 }

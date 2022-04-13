@@ -27,9 +27,6 @@ impl Config {
         let config: Config = toml::from_str(include_str!("config.toml")).unwrap();
         let gcp: GcpConfiguration = config.gcp;
         let bigquery: BqConfiguration = config.bigquery;
-        Self {
-            gcp,
-            bigquery,
-        }
+        Self { gcp, bigquery }
     }
 }

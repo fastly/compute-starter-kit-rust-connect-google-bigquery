@@ -1,10 +1,8 @@
 use crate::config::Config;
 use anyhow::anyhow;
-use chrono::{NaiveDate, Utc, Datelike};
+use chrono::{Datelike, NaiveDate, Utc};
 use fastly::http::StatusCode;
-use fastly::{panic_with_status, Body, Error, Request, Response};
-use fastly_kv_preview::local_kv::LocalStore;
-use hmac_sha256::Hash;
+use fastly::{panic_with_status, Error, Request, Response};
 use jwt_simple::algorithms::{RS256KeyPair, RSAKeyPairLike};
 use jwt_simple::claims::Claims;
 use jwt_simple::prelude::Duration;
@@ -40,104 +38,61 @@ fn gcp_bq_job_query(
 
 //Service Account to get access token
 fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<String, Error> {
-    // open local KV
-    let local_store_result = LocalStore::open();
-    if local_store_result.is_err() {
-        error!("local KV open error");
-    }
     // create jwt
     #[derive(Debug, serde::Serialize, serde::Deserialize)]
     struct Scope {
         scope: String,
     }
-    let mut access_token = "".to_string();
-    if local_store_result.is_ok() {
-        access_token = match local_store_result
-            .as_ref()
-            .unwrap()
-            .lookup(&Hash::hash(scope_value.as_bytes()))
-        {
-            Err(e) => {
-                error!("[Warnning] Can NOT lookup local KV: {}", e);
-                "".to_string()
-            }
-            Ok(x) => match x {
-                None => "".to_string(),
-                Some(x) => x.into_string(),
-            },
-        };
+    let scope = Scope {
+        scope: scope_value.clone(),
     };
-    let cache_server_host = std::env::var("FASTLY_HOSTNAME").unwrap_or_else(|_| String::new());
-    println!("access_token: {} at {}", access_token, cache_server_host);
-    if access_token == "".to_string() {
-        let scope = Scope {
-            scope: scope_value.clone(),
-        };
-        let claims = Claims::with_custom_claims(scope, Duration::from_secs(3600))
-            .with_issuer(&tomlfile.bigquery.service_account_email)
-            .with_audience(&tomlfile.gcp.aud);
-        let private_key = &tomlfile.bigquery.service_account_key.replace("\\n", "\n");
-        let jwt = RS256KeyPair::from_pem(&private_key)?.sign(claims)?;
+    let claims = Claims::with_custom_claims(scope, Duration::from_secs(3600))
+        .with_issuer(&tomlfile.bigquery.service_account_email)
+        .with_audience(&tomlfile.gcp.aud);
+    let private_key = &tomlfile.bigquery.service_account_key.replace("\\n", "\n");
+    let jwt = RS256KeyPair::from_pem(&private_key)?.sign(claims)?;
 
-        // get access token
-        #[derive(serde::Serialize, Default, Debug)]
-        struct Form {
-            grant_type: String,
-            assertion: String,
-        }
-        let form = Form {
-            grant_type: tomlfile.gcp.grant_type.to_string(),
-            assertion: jwt.to_string(),
-        };
-        let mut resp = match Request::post(tomlfile.gcp.aud.to_string())
-            .with_body_form(&form)?
-            .send("idp")
-        {
-            Err(e) => {
-                let msg = format!("Request to Google IDP Error: {}", e);
-                error!("{}", msg);
-                panic_with_status!(501, "{}", msg);
-            }
-            Ok(x) => x,
-        };
-        if !resp.get_status().is_success() {
-            let resp_str = resp.take_body_str();
-            let msg = format!("Error Access Token!: {}", resp_str);
-            error!("{}", msg);
-            panic_with_status!(501, "{}", msg);
-        }
-        let resp_value = resp.take_body_json::<serde_json::Value>()?;
-        access_token = resp_value["access_token"]
-            .as_str()
-            .unwrap_or_else(|| {
-                let msg = "Can NOT get gcp access token, logger: {}";
-                error!("{}", msg);
-                panic_with_status!(501, "{}", msg);
-            })
-            .to_string();
-        let expire = resp_value["expires_in"].as_u64().unwrap_or_else(|| {
-            let msg = "Can NOT get gcp access token expires_in";
-            error!("{}", msg);
-            panic_with_status!(501, "{}", msg);
-        });
-        if local_store_result.is_ok() {
-            if local_store_result.unwrap().insert(
-                &Hash::hash(scope_value.as_bytes()),
-                Body::from(access_token.clone()),
-                std::time::Duration::from_secs(expire),
-            ).is_err() {
-                let msg = "local kv insert error";
-                error!("{}", msg);
-            }
-        }
+    // get access token
+    #[derive(serde::Serialize, Default, Debug)]
+    struct Form {
+        grant_type: String,
+        assertion: String,
     }
+    let form = Form {
+        grant_type: tomlfile.gcp.grant_type.to_string(),
+        assertion: jwt.to_string(),
+    };
+    let mut resp = match Request::post(tomlfile.gcp.aud.to_string())
+        .with_body_form(&form)?
+        .send("idp")
+    {
+        Err(e) => {
+            let msg = format!("Request to Google IDP Error: {}", e);
+            error!("{}", msg);
+            panic_with_status!(501, "{}", msg);
+        }
+        Ok(x) => x,
+    };
+    if !resp.get_status().is_success() {
+        let resp_str = resp.take_body_str();
+        let msg = format!("Error Access Token!: {}", resp_str);
+        error!("{}", msg);
+        panic_with_status!(501, "{}", msg);
+    }
+    let resp_value = resp.take_body_json::<serde_json::Value>()?;
+    let access_token = resp_value["access_token"]
+        .as_str()
+        .unwrap_or_else(|| {
+            let msg = "Can NOT get gcp access token, logger: {}";
+            error!("{}", msg);
+            panic_with_status!(501, "{}", msg);
+        })
+        .to_string();
 
     Ok(access_token)
 }
 
-pub fn handle_insert_req(
-    req: &mut Request,
-) -> Result<Response, Error> {
+pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
     println!("Start BQ Insert!");
     let tomlfile = Config::load();
     #[derive(serde::Deserialize, Default)]
@@ -157,10 +112,7 @@ pub fn handle_insert_req(
         tomlfile.bigquery.projectid, tomlfile.bigquery.dataset_tableid, top_rising_terms.refresh_date, top_rising_terms.dma_name, top_rising_terms.dma_id, top_rising_terms.term, top_rising_terms.week, top_rising_terms.score, top_rising_terms.rank, top_rising_terms.percent_gain);
     match handle_bq_query_req(&tomlfile, &query) {
         Err(e) => {
-            let msg = format!(
-                "BQ Insert Error: {}, query: {}",
-                e, query
-            );
+            let msg = format!("BQ Insert Error: {}, query: {}", e, query);
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
         }
@@ -189,14 +141,19 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             let today = Utc::today().naive_utc();
             let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
             let today_weekday = today.weekday().num_days_from_sunday();
-            let this_sunday = today.checked_sub_signed(chrono::Duration::days(today_weekday.into())).unwrap();
+            let this_sunday = today
+                .checked_sub_signed(chrono::Duration::days(today_weekday.into()))
+                .unwrap();
             if NaiveDate::signed_duration_since(to_date, this_sunday).num_days() < 0 {
                 let msg = format!("qurey string `to`:{} is not valid", y);
                 error!("{}", msg);
                 panic_with_status!(501, "{}", msg);
             }
-            format!("week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{}'", y)
-        },
+            format!(
+                "week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{}'",
+                y
+            )
+        }
         (Some(x), Some(y)) => {
             let from_date = NaiveDate::parse_from_str(&x, "%Y-%m-%d")?;
             let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
@@ -206,12 +163,12 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                 panic_with_status!(501, "{}", msg);
             }
             format!("date >= '{}' and date <= '{}'", x, y)
-        },
+        }
     };
     let query = format!(
-                    "SELECT * FROM {}.{} where {}",
-                    tomlfile.bigquery.projectid, tomlfile.bigquery.dataset_tableid, condition
-                );
+        "SELECT * FROM {}.{} where {}",
+        tomlfile.bigquery.projectid, tomlfile.bigquery.dataset_tableid, condition
+    );
     let bqresp_json = match handle_bq_query_req(&tomlfile, &query) {
         Err(e) => {
             let msg = format!("{}, query: {}", e, query);
@@ -222,7 +179,10 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
     };
     let fields: Vec<serde_json::Value> = match bqresp_json["schema"]["fields"].as_array() {
         None => {
-            let msg = format!("BQ response format doesn't include schema.fields, query: {}", query);
+            let msg = format!(
+                "BQ response format doesn't include schema.fields, query: {}",
+                query
+            );
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
         }
@@ -230,7 +190,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
     };
     let rows: Vec<serde_json::Value> = match bqresp_json["rows"].as_array() {
         None => {
-            let msg = format!("There is no rows array in BQ resp, query: {}",query);
+            let msg = format!("There is no rows array in BQ resp, query: {}", query);
             eprintln!("{}", msg);
             let body: serde_json::Value = serde_json::from_str("[]")?;
             return Ok(Response::from_status(StatusCode::OK).with_body_json(&body)?);
@@ -276,10 +236,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
     Ok(Response::from_status(StatusCode::OK).with_body_json(&resp_json)?)
 }
 
-pub fn handle_bq_query_req(
-    tomlfile: &Config,
-    query: &str,
-) -> Result<serde_json::Value, Error> {
+pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json::Value, Error> {
     println!("Start BQ Query");
     // Get Access Token to access BQ.
     let req_url = format!(
