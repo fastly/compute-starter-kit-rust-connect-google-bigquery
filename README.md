@@ -1,4 +1,4 @@
-# Compute@Edge starter kit for Google BigQuery (Rust)
+# Google BigQuery Starter Kit for Rust
 
 ## About this starter
 
