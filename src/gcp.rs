@@ -137,7 +137,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
         (Some(x), None) => format!("week >= '{}'", x),
         (None, Some(y)) => {
             let today = Utc::today().naive_utc();
-            let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
+            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
             let today_weekday = today.weekday().num_days_from_sunday();
             let this_sunday = today
                 .checked_sub_signed(chrono::Duration::days(today_weekday.into()))
@@ -153,8 +153,8 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             )
         }
         (Some(x), Some(y)) => {
-            let from_date = NaiveDate::parse_from_str(&x, "%Y-%m-%d")?;
-            let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
+            let from_date = NaiveDate::parse_from_str(x, "%Y-%m-%d")?;
+            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
             if NaiveDate::signed_duration_since(to_date, from_date).num_days() < 0 {
                 let msg = format!("qurey string `from`: {} or `to`:{} is not valid", x, y);
                 error!("{}", msg);
