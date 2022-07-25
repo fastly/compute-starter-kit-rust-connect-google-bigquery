@@ -43,9 +43,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
     struct Scope {
         scope: String,
     }
-    let scope = Scope {
-        scope: scope_value.clone(),
-    };
+    let scope = Scope { scope: scope_value };
     let claims = Claims::with_custom_claims(scope, Duration::from_secs(3600))
         .with_issuer(&tomlfile.bigquery.service_account_email)
         .with_audience(&tomlfile.gcp.aud);
