@@ -14,9 +14,7 @@ fn main(mut req: Request) -> Result<Response, Error> {
 
     // Handle the authorized request
     match (req.get_method(), req.get_path()) {
-        (&Method::GET, "/api/v1/top_rising_terms") => {
-            return Ok(gcp::handle_get_req(&mut req)?);
-        }
+        (&Method::GET, "/api/v1/top_rising_terms") => Ok(gcp::handle_get_req(&mut req)?),
 
         (&Method::POST, "/api/v1/top_rising_terms") => {
             return Ok(gcp::handle_insert_req(&mut req)?);
