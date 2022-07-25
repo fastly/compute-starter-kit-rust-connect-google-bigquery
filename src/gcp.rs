@@ -48,7 +48,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
         .with_issuer(&tomlfile.bigquery.service_account_email)
         .with_audience(&tomlfile.gcp.aud);
     let private_key = &tomlfile.bigquery.service_account_key.replace("\\n", "\n");
-    let jwt = RS256KeyPair::from_pem(&private_key)?.sign(claims)?;
+    let jwt = RS256KeyPair::from_pem(private_key)?.sign(claims)?;
 
     // get access token
     #[derive(serde::Serialize, Default, Debug)]
