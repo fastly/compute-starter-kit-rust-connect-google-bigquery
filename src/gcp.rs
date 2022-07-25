@@ -116,7 +116,7 @@ pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
         }
         Ok(x) => x,
     };
-    return Ok(Response::from_status(StatusCode::OK));
+    Ok(Response::from_status(StatusCode::OK))
 }
 
 pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
