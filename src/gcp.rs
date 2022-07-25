@@ -58,7 +58,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
     }
     let form = Form {
         grant_type: tomlfile.gcp.grant_type.to_string(),
-        assertion: jwt.to_string(),
+        assertion: jwt,
     };
     let mut resp = match Request::post(tomlfile.gcp.aud.to_string())
         .with_body_form(&form)?
