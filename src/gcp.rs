@@ -198,8 +198,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
     let mut resp_json: Vec<serde_json::Value> = Vec::new();
     for row in rows {
         let mut data_str = "{".to_string();
-        let mut i = 0;
-        for field in &fields {
+        for (i, field) in fields.iter().enumerate() {
             if field["type"] == "INTEGER" {
                 data_str = format!(
                     r#"{} {}:{},"#,
@@ -223,7 +222,6 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                     serde_json::to_string::<String>(&data_decoded)?
                 );
             }
-            i += 1;
         }
         data_str.pop();
         data_str = format!(r#"{}}}"#, data_str);
