@@ -13,7 +13,7 @@ pub struct BqQueryReq {
     kind: String,
     query: String,
     location: String,
-    useLegacySql: bool,
+    use_legacy_sql: bool,
 }
 
 fn gcp_bq_job_query(
@@ -257,7 +257,7 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
         kind: "bigquery#queryRequest".to_string(),
         query: query.to_string(),
         location: "US".to_string(),
-        useLegacySql: false,
+        use_legacy_sql: false,
     };
     let bqresp_str = match gcp_bq_job_query(&access_token, &req_url, querydata) {
         Err(e) => {
