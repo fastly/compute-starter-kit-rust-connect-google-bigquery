@@ -239,15 +239,15 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
         "https://bigquery.googleapis.com/bigquery/v2/projects/{}/queries",
         tomlfile.bigquery.projectid
     );
-    let access_token =
-        match gcp_access_token_request(&tomlfile, tomlfile.bigquery.scope.to_string()) {
-            Err(e) => {
-                let msg = format!("Token Request Error: {}", e);
-                error!("{}", msg);
-                return Err(anyhow!(msg));
-            }
-            Ok(x) => x,
-        };
+    let access_token = match gcp_access_token_request(tomlfile, tomlfile.bigquery.scope.to_string())
+    {
+        Err(e) => {
+            let msg = format!("Token Request Error: {}", e);
+            error!("{}", msg);
+            return Err(anyhow!(msg));
+        }
+        Ok(x) => x,
+    };
     // Requesting to BQ
     let querydata = BqQueryReq {
         kind: "bigquery#queryRequest".to_string(),
