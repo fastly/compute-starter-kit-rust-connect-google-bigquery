@@ -1,5 +1,4 @@
 [bigquery]
-# Bigquery
 service_account_email = "service-account-name@project-id.iam.gserviceaccount.com"
 service_account_key = "-----BEGIN PRIVATE KEY-----\nSAMPLEKEY\n-----END PRIVATE KEY-----\n"
 scope ="https://www.googleapis.com/auth/bigquery"

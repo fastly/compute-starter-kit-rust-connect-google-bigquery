@@ -13,7 +13,7 @@ pub struct BqQueryReq {
     kind: String,
     query: String,
     location: String,
-    useLegacySql: bool,
+    use_legacy_sql: bool,
 }
 
 fn gcp_bq_job_query(
@@ -43,14 +43,12 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
     struct Scope {
         scope: String,
     }
-    let scope = Scope {
-        scope: scope_value.clone(),
-    };
+    let scope = Scope { scope: scope_value };
     let claims = Claims::with_custom_claims(scope, Duration::from_secs(3600))
         .with_issuer(&tomlfile.bigquery.service_account_email)
         .with_audience(&tomlfile.gcp.aud);
     let private_key = &tomlfile.bigquery.service_account_key.replace("\\n", "\n");
-    let jwt = RS256KeyPair::from_pem(&private_key)?.sign(claims)?;
+    let jwt = RS256KeyPair::from_pem(private_key)?.sign(claims)?;
 
     // get access token
     #[derive(serde::Serialize, Default, Debug)]
@@ -60,7 +58,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
     }
     let form = Form {
         grant_type: tomlfile.gcp.grant_type.to_string(),
-        assertion: jwt.to_string(),
+        assertion: jwt,
     };
     let mut resp = match Request::post(tomlfile.gcp.aud.to_string())
         .with_body_form(&form)?
@@ -118,7 +116,7 @@ pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
         }
         Ok(x) => x,
     };
-    return Ok(Response::from_status(StatusCode::OK));
+    Ok(Response::from_status(StatusCode::OK))
 }
 
 pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
@@ -139,7 +137,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
         (Some(x), None) => format!("week >= '{}'", x),
         (None, Some(y)) => {
             let today = Utc::today().naive_utc();
-            let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
+            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
             let today_weekday = today.weekday().num_days_from_sunday();
             let this_sunday = today
                 .checked_sub_signed(chrono::Duration::days(today_weekday.into()))
@@ -155,8 +153,8 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             )
         }
         (Some(x), Some(y)) => {
-            let from_date = NaiveDate::parse_from_str(&x, "%Y-%m-%d")?;
-            let to_date = NaiveDate::parse_from_str(&y, "%Y-%m-%d")?;
+            let from_date = NaiveDate::parse_from_str(x, "%Y-%m-%d")?;
+            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
             if NaiveDate::signed_duration_since(to_date, from_date).num_days() < 0 {
                 let msg = format!("qurey string `from`: {} or `to`:{} is not valid", x, y);
                 error!("{}", msg);
@@ -200,8 +198,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
     let mut resp_json: Vec<serde_json::Value> = Vec::new();
     for row in rows {
         let mut data_str = "{".to_string();
-        let mut i = 0;
-        for field in &fields {
+        for (i, field) in fields.iter().enumerate() {
             if field["type"] == "INTEGER" {
                 data_str = format!(
                     r#"{} {}:{},"#,
@@ -225,7 +222,6 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                     serde_json::to_string::<String>(&data_decoded)?
                 );
             }
-            i += 1;
         }
         data_str.pop();
         data_str = format!(r#"{}}}"#, data_str);
@@ -243,21 +239,21 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
         "https://bigquery.googleapis.com/bigquery/v2/projects/{}/queries",
         tomlfile.bigquery.projectid
     );
-    let access_token =
-        match gcp_access_token_request(&tomlfile, tomlfile.bigquery.scope.to_string()) {
-            Err(e) => {
-                let msg = format!("Token Request Error: {}", e);
-                error!("{}", msg);
-                return Err(anyhow!(msg));
-            }
-            Ok(x) => x,
-        };
+    let access_token = match gcp_access_token_request(tomlfile, tomlfile.bigquery.scope.to_string())
+    {
+        Err(e) => {
+            let msg = format!("Token Request Error: {}", e);
+            error!("{}", msg);
+            return Err(anyhow!(msg));
+        }
+        Ok(x) => x,
+    };
     // Requesting to BQ
     let querydata = BqQueryReq {
         kind: "bigquery#queryRequest".to_string(),
         query: query.to_string(),
         location: "US".to_string(),
-        useLegacySql: false,
+        use_legacy_sql: false,
     };
     let bqresp_str = match gcp_bq_job_query(&access_token, &req_url, querydata) {
         Err(e) => {
