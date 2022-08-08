@@ -1,12 +1,12 @@
 use crate::config::Config;
 use anyhow::anyhow;
-use chrono::{Datelike, NaiveDate, Utc};
 use fastly::http::StatusCode;
 use fastly::{panic_with_status, Error, Request, Response};
 use jwt_simple::algorithms::{RS256KeyPair, RSAKeyPairLike};
 use jwt_simple::claims::Claims;
 use jwt_simple::prelude::Duration;
 use log::error;
+use time::{format_description, Date, OffsetDateTime};
 
 #[derive(serde::Serialize, serde::Deserialize, Default, Debug)]
 pub struct BqQueryReq {
@@ -91,6 +91,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
 }
 
 pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
+// This is just an example to call INSERT SQL.
     println!("Start BQ Insert!");
     let tomlfile = Config::load();
     #[derive(serde::Deserialize, Default)]
@@ -136,16 +137,25 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
         (None, None) => "week >= DATE_TRUNC(CURRENT_DATE(), week)".to_string(),
         (Some(x), None) => format!("week >= '{}'", x),
         (None, Some(y)) => {
-            let today = Utc::today().naive_utc();
-            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
-            let today_weekday = today.weekday().num_days_from_sunday();
+            let format = format_description::parse("[year]-[month]-[day]")?;
+            let to_date = match Date::parse(y, &format) {
+                Ok(to_date) => to_date.to_julian_day(),
+                Err(e) => {
+                    let msg = format!("Error parsing date: {}", e);
+                    error!("{}", msg);
+                    panic_with_status!(400, "{}", msg);
+                }
+            };
+            let today = OffsetDateTime::now_utc().date();
+            let today_weekday = today.weekday().number_days_from_sunday();
             let this_sunday = today
-                .checked_sub_signed(chrono::Duration::days(today_weekday.into()))
-                .unwrap();
-            if NaiveDate::signed_duration_since(to_date, this_sunday).num_days() < 0 {
-                let msg = format!("qurey string `to`:{} is not valid", y);
+                .checked_sub(time::Duration::days(today_weekday.into()))
+                .unwrap()
+                .to_julian_day();
+            if to_date < this_sunday {
+                let msg = format!("query string `to`:{} is not valid", y);
                 error!("{}", msg);
-                panic_with_status!(501, "{}", msg);
+                panic_with_status!(400, "{}", msg);
             }
             format!(
                 "week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{}'",
@@ -153,9 +163,24 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             )
         }
         (Some(x), Some(y)) => {
-            let from_date = NaiveDate::parse_from_str(x, "%Y-%m-%d")?;
-            let to_date = NaiveDate::parse_from_str(y, "%Y-%m-%d")?;
-            if NaiveDate::signed_duration_since(to_date, from_date).num_days() < 0 {
+            let format = format_description::parse("[year]-[month]-[day]")?;
+            let from_date = match Date::parse(x, &format) {
+                Err(e) => {
+                    let msg = format!("Error parsing date: {}", e);
+                    error!("{}", msg);
+                    panic_with_status!(501, "{}", msg);
+                }
+                Ok(from_date) => from_date.to_julian_day(),
+            };
+            let to_date = match Date::parse(y, &format) {
+                Err(e) => {
+                    let msg = format!("Error parsing date: {}", e);
+                    error!("{}", msg);
+                    panic_with_status!(501, "{}", msg);
+                }
+                Ok(to_date) => to_date.to_julian_day(),
+            };
+            if to_date < from_date {
                 let msg = format!("qurey string `from`: {} or `to`:{} is not valid", x, y);
                 error!("{}", msg);
                 panic_with_status!(501, "{}", msg);
