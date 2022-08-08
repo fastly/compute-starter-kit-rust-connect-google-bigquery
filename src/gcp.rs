@@ -91,7 +91,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
 }
 
 pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
-#This is just an example to call INSERT SQL.
+// This is just an example to call INSERT SQL.
     println!("Start BQ Insert!");
     let tomlfile = Config::load();
     #[derive(serde::Deserialize, Default)]
