@@ -139,12 +139,12 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
         (None, Some(y)) => {
             let format = format_description::parse("[year]-[month]-[day]")?;
             let to_date = match Date::parse(y, &format) {
+                Ok(to_date) => to_date.to_julian_day(),
                 Err(e) => {
                     let msg = format!("Error parsing date: {}", e);
                     error!("{}", msg);
-                    panic_with_status!(501, "{}", msg);
+                    panic_with_status!(400, "{}", msg);
                 }
-                Ok(to_date) => to_date.to_julian_day(),
             };
             let today = OffsetDateTime::now_utc().date();
             let today_weekday = today.weekday().number_days_from_sunday();
@@ -153,9 +153,9 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                 .unwrap()
                 .to_julian_day();
             if to_date < this_sunday {
-                let msg = format!("qurey string `to`:{} is not valid", y);
+                let msg = format!("query string `to`:{} is not valid", y);
                 error!("{}", msg);
-                panic_with_status!(501, "{}", msg);
+                panic_with_status!(400, "{}", msg);
             }
             format!(
                 "week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{}'",
