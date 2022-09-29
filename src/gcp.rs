@@ -69,7 +69,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
             let msg = format!("Request to Google IDP Error: {}", e);
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
-        },
+        }
     };
     if !resp.get_status().is_success() {
         let resp_str = resp.take_body_str();
@@ -91,7 +91,7 @@ fn gcp_access_token_request(tomlfile: &Config, scope_value: String) -> Result<St
 }
 
 pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
-// This is just an example to call INSERT SQL.
+    // This is just an example to call INSERT SQL.
     println!("Start BQ Insert!");
     let tomlfile = Config::load();
     #[derive(serde::Deserialize, Default)]
@@ -115,7 +115,7 @@ pub fn handle_insert_req(req: &mut Request) -> Result<Response, Error> {
             let msg = format!("BQ Insert Error: {}, query: {}", e, query);
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
-        },
+        }
     };
     Ok(Response::from_status(StatusCode::OK))
 }
@@ -129,7 +129,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             let msg = format!("Get request, querystring Error: {}", e);
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
-        },
+        }
     };
     let from_str = query_string["from"].as_str();
     let to_str = query_string["to"].as_str();
@@ -144,7 +144,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                     let msg = format!("Error parsing date: {}", e);
                     error!("{}", msg);
                     panic_with_status!(400, "{}", msg);
-                },
+                }
             };
             let today = OffsetDateTime::now_utc().date();
             let today_weekday = today.weekday().number_days_from_sunday();
@@ -161,7 +161,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                 "week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{}'",
                 y
             )
-        },
+        }
         (Some(x), Some(y)) => {
             let format = format_description::parse("[year]-[month]-[day]")?;
             let from_date = match Date::parse(x, &format) {
@@ -170,7 +170,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                     let msg = format!("Error parsing date: {}", e);
                     error!("{}", msg);
                     panic_with_status!(501, "{}", msg);
-                },
+                }
             };
             let to_date = match Date::parse(y, &format) {
                 Ok(to_date) => to_date.to_julian_day(),
@@ -178,7 +178,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                     let msg = format!("Error parsing date: {}", e);
                     error!("{}", msg);
                     panic_with_status!(501, "{}", msg);
-                },
+                }
             };
             if to_date < from_date {
                 let msg = format!("qurey string `from`: {} or `to`:{} is not valid", x, y);
@@ -186,7 +186,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                 panic_with_status!(501, "{}", msg);
             }
             format!("date >= '{}' and date <= '{}'", x, y)
-        },
+        }
     };
     let query = format!(
         "SELECT * FROM {}.{} where {}",
@@ -198,7 +198,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             let msg = format!("{}, query: {}", e, query);
             error!("{}", msg);
             panic_with_status!(501, "{}", msg);
-        },
+        }
     };
     let fields: Vec<serde_json::Value> = match bqresp_json["schema"]["fields"].as_array() {
         None => {
@@ -271,7 +271,7 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
             let msg = format!("Token Request Error: {}", e);
             error!("{}", msg);
             return Err(anyhow!(msg));
-        },
+        }
     };
     // Requesting to BQ
     let querydata = BqQueryReq {
@@ -286,7 +286,7 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
             let msg = format!("BQ Query Request Error: {}", e);
             error!("{}", msg);
             return Err(anyhow!(msg));
-        },
+        }
     };
     let bqresp_json: serde_json::Value = match serde_json::from_str(&bqresp_str) {
         Ok(x) => x,
@@ -294,7 +294,7 @@ pub fn handle_bq_query_req(tomlfile: &Config, query: &str) -> Result<serde_json:
             let msg = format!("BQ response format is NOT valid JSON: {}", e);
             eprintln!("{}", msg);
             return Err(anyhow!(msg));
-        },
+        }
     };
     Ok(bqresp_json)
 }
