@@ -108,27 +108,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "compute-starter-kit-rust"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "base64",
- "fastly",
- "hex",
- "jwt-simple",
- "log",
- "log-fastly",
- "once_cell",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "time",
- "toml",
- "urlencoding",
-]
-
-[[package]]
 name = "const-oid"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -279,6 +258,27 @@ dependencies = [
  "thiserror",
  "time",
  "url",
+]
+
+[[package]]
+name = "fastly-compute-project"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "fastly",
+ "hex",
+ "jwt-simple",
+ "log",
+ "log-fastly",
+ "once_cell",
+ "rand",
+ "regex",
+ "serde",
+ "serde_json",
+ "time",
+ "toml",
+ "urlencoding",
 ]
 
 [[package]]
