@@ -237,7 +237,9 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
                 );
             } else {
                 let data_decoded = match field["name"].as_str().unwrap() {
-                    "update" => urlencoding::decode(row["f"][i]["v"].as_str().unwrap_or(""))?,
+                    "update" => {
+                        urlencoding::decode(row["f"][i]["v"].as_str().unwrap_or(""))?.into()
+                    }
                     _ => row["f"][i]["v"].as_str().unwrap_or("").to_string(),
                 };
                 data_str = format!(
