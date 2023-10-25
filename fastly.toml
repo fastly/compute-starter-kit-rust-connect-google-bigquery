@@ -1,5 +1,5 @@
 authors = ["<oss@fastly.com>"]
-description = "Starter kit for Google Bigquery Connector."
+description = "Fastly Compute starter kit for Google Bigquery Connector."
 language = "rust"
 manifest_version = 2
 name = "Connect to Google Bigquery for Rust"

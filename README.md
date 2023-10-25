@@ -2,7 +2,7 @@
 
 ## About this starter
 
-This starter kit is to connect to Google's BigQuery. You can use Data Manipulation Language (DML) since this uses [`jobs.query` of bigquery API](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query). The reason why this uses `jobs.query` to insert data rather than [streaming insert api](https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll) is to allow the inserted data to be modified immediately.
+This Fastly Compute starter kit is to connect to Google's BigQuery. You can use Data Manipulation Language (DML) since this uses [`jobs.query` of bigquery API](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query). The reason why this uses `jobs.query` to insert data rather than [streaming insert api](https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll) is to allow the inserted data to be modified immediately.
 
 ## Configuration
 
