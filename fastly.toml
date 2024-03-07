@@ -4,6 +4,9 @@ language = "rust"
 manifest_version = 2
 name = "Connect to Google Bigquery for Rust"
 
+[scripts]
+  build = "cargo build --bin fastly-compute-project --release --target wasm32-wasi --color always"
+
 [local_server]
 
   [local_server.backends]
