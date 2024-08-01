@@ -17,7 +17,6 @@ pub struct BqConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct GcpConfiguration {
-    pub alg: String,
     pub aud: String,
     pub grant_type: String,
 }
