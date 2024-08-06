@@ -8,7 +8,7 @@ edition = "2018"
 debug = true
 
 [dependencies]
-fastly = "0.9.0"
+fastly = "0.10.0"
 log-fastly = "0.9.0"
 log = "^0.4.20"
 rand = "^0.8.5"
