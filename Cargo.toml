@@ -9,7 +9,7 @@ debug = true
 
 [dependencies]
 fastly = "0.11.2"
-log-fastly = "0.9.0"
+log-fastly = "0.11.2"
 log = "^0.4.20"
 rand = "^0.8.5"
 serde = { version = "^1.0.189", features = ["derive"] }
