@@ -137,7 +137,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
         (None, None) => "week >= DATE_TRUNC(CURRENT_DATE(), week)".to_string(),
         (Some(x), None) => format!("week >= '{x}'"),
         (None, Some(y)) => {
-            let format = format_description::parse("[year]-[month]-[day]")?;
+            let format = format_description::parse_borrowed::<1>("[year]-[month]-[day]")?;
             let to_date = match Date::parse(y, &format) {
                 Ok(to_date) => to_date.to_julian_day(),
                 Err(e) => {
@@ -160,7 +160,7 @@ pub fn handle_get_req(req: &Request) -> Result<Response, Error> {
             format!("week >= DATE_TRUNC(CURRENT_DATE(), week) and week <= '{y}'")
         }
         (Some(x), Some(y)) => {
-            let format = format_description::parse("[year]-[month]-[day]")?;
+            let format = format_description::parse_borrowed::<1>("[year]-[month]-[day]")?;
             let from_date = match Date::parse(x, &format) {
                 Ok(from_date) => from_date.to_julian_day(),
                 Err(e) => {
